@@ -29,8 +29,8 @@ namespace HxngryCONSOLE
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("Please select one of the following options to begin. . .");
-                Console.WriteLine("[F] Food Search\n[G] Grocery Search\n[E] Entertainment Search\n[N] Search by Name\n[Q] To Quit");
+                Console.WriteLine("Please select one of the following options to begin...");
+                Console.WriteLine("\n[F] Food Search\n[G] Grocery Search\n[E] Entertainment Search\n[N] Search by Name\n[Q] To Quit");
                 ConsoleKeyInfo userChoice = Console.ReadKey();
                 if (userChoice.KeyChar == 'f' || userChoice.KeyChar == 'F')
                 {
@@ -46,7 +46,7 @@ namespace HxngryCONSOLE
                 }
                 else if(userChoice.KeyChar == 'n' || userChoice.KeyChar == 'N')
                 {
-                    //NameSearch();
+                    BuildNameRequest();
                 }
                 else if(userChoice.KeyChar == 'q' || userChoice.KeyChar == 'Q')
                 {
@@ -114,8 +114,8 @@ namespace HxngryCONSOLE
         public void ChangeSearchParams()
         {
             Console.Clear();
-            Console.WriteLine("You have selected to change your search address. . .");
-            Console.WriteLine("Please follow the instructions and provide the necessary information to determine the search location. Press any key to continue. . .");
+            Console.WriteLine("You have selected to change your search address...");
+            Console.WriteLine("Please follow the instructions and provide the necessary information to determine the search location. Press any key to continue...");
             Console.ReadKey();
             Console.Clear();
             Console.WriteLine("We will require various parts of the address you'd like to search from. The format will be as such:");
@@ -194,7 +194,7 @@ namespace HxngryCONSOLE
                 Console.Clear();
                 if (count == 0)
                 {
-                    Console.WriteLine("We must verify your number with Hxngry in order to send SMS messages.\nPlease follow the instructions provided on screen.\n\n Press any key to continue. . .");
+                    Console.WriteLine("We must verify your number with Hxngry in order to send SMS messages.\nPlease follow the instructions provided on screen.\n\n Press any key to continue...");
                     Console.ReadKey();
                     VerifyCallerID();
                 }
@@ -202,7 +202,7 @@ namespace HxngryCONSOLE
                 {
                     Console.WriteLine("Your number (" + this.user.Phone + ") is already verified with us, thank you for returning to Hxngry.");
                 }
-                Console.WriteLine("[Space Bar] To continue\n[R] To Resubmit Phone Number\n[Q] To Quit");
+                Console.WriteLine("\n[Space Bar] To continue\n[R] To Resubmit Phone Number\n[Q] To Quit");
                 ConsoleKeyInfo userChoice = Console.ReadKey();
                 if(userChoice.KeyChar == ' ')
                 {
@@ -229,7 +229,7 @@ namespace HxngryCONSOLE
             );
             Console.WriteLine("You will receive a call within the next minute, the call will request a verification code.\n");
             Console.WriteLine("This is your verification code: " + validationRequest.ValidationCode);
-            Console.WriteLine("Once you have entered the verification code you may press any key to continue. . .");
+            Console.WriteLine("Once you have entered the verification code you may press any key to continue...");
             AppLoading();
             Console.Clear();
             Console.WriteLine("You will now be sent an SMS message verifying your number's authentication.");
@@ -258,23 +258,66 @@ namespace HxngryCONSOLE
             this.user.Phone = phone;
             return acceptedInput;
         }
+        //PLACES SEARCH METHODS
+        private void BuildNameRequest()
+        {
+            Console.Clear();
+            double searchRadius = SearchRadius();
+            string searchKey = SearchKey();
+            string nameRequest = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + this.user.Latitude + "," + this.user.Longitude + "&radius=" + searchRadius + "&keyword=" + searchKey + "&key=" + Environment.GetEnvironmentVariable("GOOGLE_PLACES_KEY");
+            //Console.WriteLine(nameRequest);
+            //Console.ReadKey();
+            List<PlacesData.Result> results = PlacesDataRequest(nameRequest);
+            SortByRating(results);
+            PrintData(results);
+            ChoosePlace(results);
+
+
+        }
+        private List<PlacesData.Result> SortByRating(List<PlacesData.Result> results)
+        {
+            results.Sort((y, x) => x.rating.CompareTo(y.rating));
+            return results;
+        }
+        private void PrintData(List<PlacesData.Result> results)
+        {
+            Console.WriteLine("Search Complete. The results will be listed from highest to lowest rating below...\n");
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("| {0,-45} | {1,-28} | {2,-14} | {3}", "Restaurant Name", "Ratings", "Distance", "Address");
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            for (int i = 0; i < results.Count; ++i)
+            {
+                string reports = "(" + results[i].rating + " via " + results[i].user_ratings_total + " user reports)";
+                int price = results[i].price_level;
+                string pricing = "";
+                for (int j = 0; j < price; ++j)
+                {
+                    pricing = pricing + "$";
+                }
+                string name = results[i].name + " (" + pricing + ")";
+                Console.WriteLine("| {0,-45} | {1,-28} | {2,-14} | {3}", name, reports, Math.Round(Calculations.distance(this.user.Latitude, this.user.Longitude, results[i].geometry.location.lat, results[i].geometry.location.lng, 'M'), 2).ToString() + " mi.", results[i].vicinity);
+            }
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
+        }
         //FOOD SEARCH METHODS
-        public void BuildFoodRequest()
+        private void BuildFoodRequest()
         {
             Console.Clear();
             double searchRadius = SearchRadius();
             string searchKey = SearchKey();
             string foodRequest = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + this.user.Latitude + "," + this.user.Longitude + "&radius=" + searchRadius + "&type=restaurant&keyword=" + searchKey + "&key=" + Environment.GetEnvironmentVariable("GOOGLE_PLACES_KEY");
+            //Console.WriteLine(foodRequest);
+            //Console.ReadKey();
             List<PlacesData.Result> results = PlacesDataRequest(foodRequest);
             
             results = CleanData(searchKey, searchRadius, results);
             PrintNearbyFoodData(results);
             ChoosePlace(results);
         }
-        public void ChoosePlace(List<PlacesData.Result> results)
+        private void ChoosePlace(List<PlacesData.Result> results)
         {
-            Console.WriteLine("\n\nSearch Successful. . .");
-            Console.WriteLine("[N] Select Specific Restaurant\n[R] Conduct Another Search\n[Q] Quit");
+            Console.WriteLine("\n\nSearch Successful...");
+            Console.WriteLine("\n[N] Select Specific Restaurant\n[R] Conduct Another Search\n[Q] Quit");
             ConsoleKeyInfo userChoice = Console.ReadKey();
             if (userChoice.KeyChar == 'n' || userChoice.KeyChar == 'N')
             {
@@ -292,7 +335,7 @@ namespace HxngryCONSOLE
                     bool userReady = false;
                     while (userReady == false)
                     {
-                        Console.WriteLine("[Space Bar] Display The Most Recent Reviews\n[Enter] Select This Restaurant and Notify via SMS\n[B] Return to Main Menu");
+                        Console.WriteLine("\n[Space Bar] Display The Most Recent Reviews\n[Enter] Select This Restaurant and Notify via SMS\n[B] Return to Main Menu");
                         userChoice = Console.ReadKey();
                         if(userChoice.KeyChar == 'b' || userChoice.KeyChar == 'B')
                         {
@@ -334,11 +377,11 @@ namespace HxngryCONSOLE
             }
 
         }
-        public void SelectPlace(SelectedPlace placeInfo)
+        private void SelectPlace(SelectedPlace placeInfo)
         {
             Console.Clear();
             Console.WriteLine("You have selected " + placeInfo.result.name + ".");
-            Console.WriteLine("Applicable SMS numbers will be notified shortly. . .");
+            Console.WriteLine("Applicable SMS numbers will be notified shortly...");
             string messageBody = "You have selected to the restaurant: " + placeInfo.result.name + " located at " + placeInfo.result.vicinity + ".";
             //var message = MessageResource.Create(
             //    body: messageBody,
@@ -361,12 +404,12 @@ namespace HxngryCONSOLE
             Thread.Sleep(100);
             Environment.Exit(0);
         }
-        public void PrintNearbyFoodData(List<PlacesData.Result> results)
+        private void PrintNearbyFoodData(List<PlacesData.Result> results)
         {
-            Console.WriteLine("Search Complete. The results will be listed from highest to lowest rating below. . .\n");
-            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------");
-            Console.WriteLine("| {0,-45} | {1,-28} | {2,-8} | {3}", "Restaurant Name", "Ratings", "Distance", "Address");
-            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("Search Complete. The results will be listed from highest to lowest rating below...\n");
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("| {0,-45} | {1,-28} | {2,-14} | {3}", "Restaurant Name", "Ratings", "Distance", "Address");
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
             for (int i = 0; i < results.Count; ++i)
             {
                 string reports = "(" + results[i].rating + " via " + results[i].user_ratings_total + " user reports)";
@@ -377,11 +420,11 @@ namespace HxngryCONSOLE
                     pricing = pricing + "$";
                 }
                 string name = results[i].name + " (" + pricing + ")";
-                Console.WriteLine("| {0,-45} | {1,-28} | {2,-8} | {3}", name, reports, Math.Round(Calculations.distance(this.user.Latitude, this.user.Longitude, results[i].geometry.location.lat, results[i].geometry.location.lng, 'M'), 2).ToString() + " mi.", results[i].vicinity);
+                Console.WriteLine("| {0,-45} | {1,-28} | {2,-14} | {3}", name, reports, Math.Round(Calculations.distance(this.user.Latitude, this.user.Longitude, results[i].geometry.location.lat, results[i].geometry.location.lng, 'M'), 2).ToString() + " mi.", results[i].vicinity);
             }
-            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine(" ------------------------------------------------------------------------------------------------------------------------------------------------------------");
         }
-        public List<PlacesData.Result> CleanData(string searchItem, double numMiles, List<PlacesData.Result> results)
+        private List<PlacesData.Result> CleanData(string searchItem, double numMiles, List<PlacesData.Result> results)
         {
             Console.Clear();
             Console.WriteLine("Would you like to only include venues that offer takeout? (y/n)");
@@ -432,7 +475,7 @@ namespace HxngryCONSOLE
             Console.WriteLine(searchString + "\n");
             return results;
         }
-        public List<PlacesData.Result> PlacesDataRequest(string request)
+        private List<PlacesData.Result> PlacesDataRequest(string request)
         {
             string baseRequest = request;
             string currentHTMLRequest = baseRequest;
@@ -441,7 +484,10 @@ namespace HxngryCONSOLE
             WebClient webClient = new WebClient();
             string jsonData = webClient.DownloadString(currentHTMLRequest);
             PlacesData rootJObject = JsonConvert.DeserializeObject<PlacesData>(jsonData);
-            results.AddRange(rootJObject.results);
+            if(rootJObject.results != null)
+            {
+                results.AddRange(rootJObject.results);
+            }
             string nextPageToken = rootJObject.next_page_token;
             while (rootJObject.next_page_token != null)
             {
@@ -459,12 +505,19 @@ namespace HxngryCONSOLE
             }
             return results;
         }
-        public double SearchRadius()
+        private double SearchRadius()
         {
             Console.Clear();
-            Console.WriteLine("Please enter the maximum number of miles away from your current location that the destination may be. . .");
+            Console.WriteLine("Please enter the maximum number of miles away from your current location that the destination may be...");
             var numMiles = Console.ReadLine();
-            double miles = Convert.ToInt32(numMiles);
+            double miles = 0;
+            try
+            {
+                miles = Convert.ToInt32(numMiles);
+            }
+            catch(Exception e)
+            {
+            }
             while (double.IsNaN(miles) || miles == 0)
             {
                 Console.Clear();
@@ -475,15 +528,15 @@ namespace HxngryCONSOLE
             double searchRadius = miles * 1609.344;
             return searchRadius;
         }
-        public string SearchKey()
+        private string SearchKey()
         {
             Console.Clear();
-            Console.WriteLine("Please enter the search term you would like to base the search on. . .");
+            Console.WriteLine("Please enter the search term you would like to base the search on...");
             Console.WriteLine("EXAMPLES:\n[Food] Burgers\n[Entertainment] Arcade\n[Grocery] Kroger\n[Name] Advanced Auto Parts\n\n");
             string searchKey = Console.ReadLine();
             return searchKey;
         }
-        public void AppLoading()
+        private void AppLoading()
         {
             for (int i = 0; i < 5; ++i)
             {
