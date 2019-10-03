@@ -6,7 +6,7 @@ using System.Net;
 
 namespace HxngryCONSOLE
 {
-    public class IPData
+    public class IPData : User
     {
         public string IP { get; set; }
         public bool EU { get; set; }
