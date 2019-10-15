@@ -434,7 +434,8 @@ namespace HxngryCONSOLE
             ConsoleKeyInfo userChoice = Console.ReadKey();
             if (userChoice.KeyChar == 'n' || userChoice.KeyChar == 'N')
             {
-                Console.WriteLine("Please enter the name of the place you'd like more information on.\n");
+                ClearCurrentConsoleLine();
+                Console.WriteLine("\nPlease enter the name of the place you'd like more information on.\n");
                 string place = Console.ReadLine();
                 if (results.Exists(a => a.name == place))
                 {
@@ -496,9 +497,9 @@ namespace HxngryCONSOLE
             Console.WriteLine("You have selected " + placeInfo.result.name + ".");
             Console.WriteLine("Would you like to add a personal message to the notification?\n\n[Y] Yes\n[N] No");
             string customMessage = "";
+            ConsoleKeyInfo userChoice = Console.ReadKey();
             while (true)
             {
-                ConsoleKeyInfo userChoice = Console.ReadKey();
                 if(userChoice.KeyChar == 'y' || userChoice.KeyChar == 'Y')
                 {
                     PrintBanner();
@@ -512,28 +513,109 @@ namespace HxngryCONSOLE
                     break;
                 }
             }
-            Console.WriteLine("Applicable SMS numbers will be notified shortly...");
-            string messageBody = "\nUser Message: " + customMessage + "\n\nThe seleceted venue is: " + placeInfo.result.name + " located at " + placeInfo.result.address_components[0].long_name + " " + placeInfo.result.address_components[1].long_name + ", " + placeInfo.result.address_components[3].long_name + ", " + placeInfo.result.address_components[4].short_name + " " + placeInfo.result.address_components[6].long_name;
-            var message = MessageResource.Create(
-                body: messageBody,
-                from: new Twilio.Types.PhoneNumber("+15204629326"),
-                to: new Twilio.Types.PhoneNumber("+18043705689")
-            );
-            AppLoading();
+
+            Console.Clear();
             PrintBanner();
-            Console.WriteLine("Message sent.");
-            Console.WriteLine("Closing Application");
-            Console.Write(".");
-            Thread.Sleep(100);
-            Console.Write(".");
-            Thread.Sleep(100);
-            Console.Write(".");
-            Thread.Sleep(100);
-            Console.Write(".");
-            Thread.Sleep(100);
-            Console.Write(".");
-            Thread.Sleep(100);
-            Environment.Exit(0);
+            Console.WriteLine("Please enter the numbers you would like to send the message to in the following format: (###) ###-####");
+            Console.WriteLine("If you would like to send this to multiple numbers, please separate the phone numbers by semi-colons.");
+            Console.WriteLine("[Enter] To Continue (Press Twice)\n[Q] To Quit To Main Menu");
+            List<string> validUserNumbers = new List<string>();
+            while (true)
+            {
+                string numbersInput = Console.ReadLine();
+                userChoice = Console.ReadKey();
+                if (userChoice.KeyChar == (char)ConsoleKey.Enter)
+                {
+                    List<string> userNumbers = numbersInput.Split(";").ToList<string>();
+                    for(int i = 0; i < userNumbers.Count; ++i)
+                    {
+                        userNumbers[i] = userNumbers[i].Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "").Trim();
+                        if(userNumbers[i].Length == 10)
+                        {
+                            if(IsDigitsOnly(userNumbers[i]) == true)
+                            {
+                                validUserNumbers.Add("+1" + userNumbers[i]);
+                            }
+                        }
+                    }
+                    break;
+                }
+                else if (userChoice.KeyChar == 'n' || userChoice.KeyChar == 'N')
+                {
+                    break;
+                }
+            }
+            validUserNumbers = validUserNumbers.Distinct().ToList<string>();
+            PrintBanner();
+            if(validUserNumbers.Count > 0)
+            {
+                Console.WriteLine("Sending SMS Notifications now...\n");
+                int count = 0;
+                foreach(string number in validUserNumbers)
+                {
+                    count++;
+                    Console.Write("Sending #" + count.ToString());
+                    Thread.Sleep(50);
+                    Console.Write(".");
+                    Thread.Sleep(50);
+                    Console.Write(".");
+                    Thread.Sleep(50);
+                    Console.Write(".");
+                    Thread.Sleep(50);
+                    Console.Write(".");
+                    Thread.Sleep(50);
+                    Console.Write(".");
+                    string messageBody = "\nUser Message: " + customMessage + "\n\nThe seleceted venue is: " + placeInfo.result.name + " located at " + placeInfo.result.address_components[0].long_name + " " + placeInfo.result.address_components[1].long_name + ", " + placeInfo.result.address_components[3].long_name + ", " + placeInfo.result.address_components[4].short_name + " " + placeInfo.result.address_components[6].long_name;
+                    var message = MessageResource.Create(
+                        body: messageBody,
+                        from: new Twilio.Types.PhoneNumber("+15204629326"), //Shouldn't be accessible unless user has access to Protected API Token
+                        to: new Twilio.Types.PhoneNumber(number)
+                    );
+                    ClearCurrentConsoleLine();
+                    Console.WriteLine("SENT.");
+                }
+                PrintBanner();
+                if(count > 1)
+                {
+                    Console.WriteLine(count.ToString() + " messages sent.");
+                }
+                else
+                {
+                    Console.WriteLine("Message sent.");
+                }
+                Console.WriteLine("Closing Application");
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Environment.Exit(0);
+            }
+            else
+            {
+                PrintBanner();
+                Console.WriteLine("There were no applicable numbers provided. We're sorry we cannot send your notification at this time.");
+                AppLoading();
+                PrintBanner();
+                Console.WriteLine("Closing Application");
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Console.Write(".");
+                Thread.Sleep(100);
+                Environment.Exit(0);
+            }
+            
         }
         private void PrintNearbyFoodData(List<PlacesData.Result> results)
         {
@@ -693,6 +775,24 @@ namespace HxngryCONSOLE
                 Console.Write(".");
                 Thread.Sleep(100);
             }
+        }
+        public static void ClearCurrentConsoleLine()
+        {
+            int currentLineCursor = Console.CursorTop;
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.Write(new string(' ', Console.WindowWidth));
+            Console.SetCursorPosition(0, currentLineCursor);
+        }
+        bool IsDigitsOnly(string str)
+        {
+            foreach (char c in str)
+            {
+                if (c < '0' || c > '9')
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         private void PrintBanner()
         {
